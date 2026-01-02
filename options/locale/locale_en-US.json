@@ -158,6 +158,8 @@
   "search.regexp_tooltip": "Include only results that match the regexp search term",
   "search.exact": "Exact",
   "search.exact_tooltip": "Include only results that match the exact search term",
+  "search.semantic": "Semantic",
+  "search.semantic_tooltip": "AI-powered search that understands code meaning and context",
   "search.repo_kind": "Search repos…",
   "search.user_kind": "Search users…",
   "search.org_kind": "Search orgs…",

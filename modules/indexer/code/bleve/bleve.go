@@ -5,8 +5,11 @@ package bleve
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -139,6 +142,10 @@ type Indexer struct {
 }
 
 func (b *Indexer) SupportedSearchModes() []indexer.SearchMode {
+	// Add semantic mode as first (default) if Unity Coco is enabled
+	if setting.UnityCoco.Enabled {
+		return indexer.SearchModesWithSemantic(indexer.SearchModesExactWords())
+	}
 	return indexer.SearchModesExactWords()
 }
 
@@ -260,6 +267,13 @@ func (b *Indexer) Delete(_ context.Context, repoID int64) error {
 // Search searches for files in the specified repo.
 // Returns the matching file-paths
 func (b *Indexer) Search(ctx context.Context, opts *internal.SearchOptions) (int64, []*internal.SearchResult, []*internal.SearchResultLanguages, error) {
+	searchMode := util.IfZero(opts.SearchMode, b.SupportedSearchModes()[0].ModeValue)
+
+	// Handle semantic search via Unity Coco Web API
+	if searchMode == indexer.SearchModeSemantic && setting.UnityCoco.Enabled {
+		return b.searchSemantic(ctx, opts)
+	}
+
 	var (
 		indexerQuery query.Query
 		keywordQuery query.Query
@@ -270,7 +284,6 @@ func (b *Indexer) Search(ctx context.Context, opts *internal.SearchOptions) (int
 	pathQuery.FieldVal = "Filename"
 	pathQuery.SetBoost(10)
 
-	searchMode := util.IfZero(opts.SearchMode, b.SupportedSearchModes()[0].ModeValue)
 	if searchMode == indexer.SearchModeExact {
 		// 1.21 used NewPrefixQuery, but it seems not working well, and later releases changed to NewMatchPhraseQuery
 		q := bleve.NewMatchPhraseQuery(opts.Keyword)
@@ -397,4 +410,105 @@ func (b *Indexer) Search(ctx context.Context, opts *internal.SearchOptions) (int
 		})
 	}
 	return total, searchResults, searchResultLanguages, nil
+}
+
+// searchSemantic performs semantic search via Unity Coco Web API
+func (b *Indexer) searchSemantic(ctx context.Context, opts *internal.SearchOptions) (int64, []*internal.SearchResult, []*internal.SearchResultLanguages, error) {
+	if len(opts.RepoIDs) == 0 {
+		return 0, nil, nil, nil
+	}
+
+	// Get repo info for API call
+	repo, err := repo_model.GetRepositoryByID(ctx, opts.RepoIDs[0])
+	if err != nil {
+		return 0, nil, nil, err
+	}
+
+	// Build API URL with proper encoding
+	_, limit := opts.GetSkipTake()
+	apiURL := fmt.Sprintf("%s/api/search?q=%s&repo=%s&branch=%s&limit=%d",
+		setting.UnityCoco.WebURL,
+		url.QueryEscape(opts.Keyword),
+		url.QueryEscape(repo.FullName()),
+		url.QueryEscape(repo.DefaultBranch),
+		limit,
+	)
+
+	// Add language filter if specified
+	if opts.Language != "" {
+		apiURL += "&lang=" + url.QueryEscape(opts.Language)
+	}
+
+	// Make HTTP request
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, nil, nil, fmt.Errorf("Unity Coco API error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, nil, nil, fmt.Errorf("Unity Coco API returned status %d", resp.StatusCode)
+	}
+
+	// Parse response
+	var apiResp struct {
+		Results []struct {
+			FilePath        string  `json:"file_path"`
+			ChunkText       string  `json:"chunk_text"`
+			StartLine       int     `json:"start_line"`
+			EndLine         int     `json:"end_line"`
+			SimilarityScore float32 `json:"similarity_score"`
+			Language        string  `json:"language"`
+			CommitSha       string  `json:"commit_sha"`
+		} `json:"results"`
+		Total int `json:"total"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return 0, nil, nil, fmt.Errorf("failed to decode Unity Coco response: %w", err)
+	}
+
+	// Transform to internal results
+	searchResults := make([]*internal.SearchResult, len(apiResp.Results))
+	languageCounts := make(map[string]int)
+
+	for i, r := range apiResp.Results {
+		language := r.Language
+		if language == "" {
+			language = analyze.GetCodeLanguage(r.FilePath, []byte(r.ChunkText))
+		}
+		languageCounts[language]++
+
+		searchResults[i] = &internal.SearchResult{
+			RepoID:      opts.RepoIDs[0],
+			Filename:    r.FilePath,
+			Content:     r.ChunkText,
+			CommitID:    r.CommitSha,
+			StartIndex:  0,
+			EndIndex:    len(r.ChunkText),
+			Language:    language,
+			Color:       enry.GetColor(language),
+			UpdatedUnix: timeutil.TimeStampNow(),
+		}
+	}
+
+	// Build language facets
+	searchResultLanguages := make([]*internal.SearchResultLanguages, 0, len(languageCounts))
+	for lang, count := range languageCounts {
+		if lang != "" {
+			searchResultLanguages = append(searchResultLanguages, &internal.SearchResultLanguages{
+				Language: lang,
+				Color:    enry.GetColor(lang),
+				Count:    count,
+			})
+		}
+	}
+
+	return int64(apiResp.Total), searchResults, searchResultLanguages, nil
 }

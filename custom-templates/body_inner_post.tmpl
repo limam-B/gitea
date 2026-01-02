@@ -1,0 +1,15 @@
+{{if .IsViewFile}}
+<div class="repo-view-right-panel">
+  <div class="flex-text-block repo-button-row">
+    <button type="button" class="repo-view-right-panel-toggle ui button"
+      data-toggle-action="hide"
+      data-tooltip-content="Hide Code Intelligence">
+      {{svg "octicon-sidebar-expand"}}
+    </button>
+    <b>Code Intelligence</b>
+  </div>
+  <div id="view-code-intel" class="tw-overflow-auto tw-h-full tw-p-4">
+    <p class="tw-text-gray-500">Select code to see references</p>
+  </div>
+</div>
+{{end}}

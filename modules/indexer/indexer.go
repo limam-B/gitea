@@ -6,10 +6,11 @@ package indexer
 type SearchModeType string
 
 const (
-	SearchModeExact  SearchModeType = "exact"
-	SearchModeWords  SearchModeType = "words"
-	SearchModeFuzzy  SearchModeType = "fuzzy"
-	SearchModeRegexp SearchModeType = "regexp"
+	SearchModeSemantic SearchModeType = "semantic" // AI-powered semantic search (default when enabled)
+	SearchModeExact    SearchModeType = "exact"
+	SearchModeWords    SearchModeType = "words"
+	SearchModeFuzzy    SearchModeType = "fuzzy"
+	SearchModeRegexp   SearchModeType = "regexp"
 )
 
 type SearchMode struct {
@@ -51,4 +52,18 @@ func GitGrepSupportedSearchModes() []SearchMode {
 			TitleTrKey:   "search.regexp",
 		},
 	}...)
+}
+
+// SemanticSearchMode returns the semantic search mode definition
+func SemanticSearchMode() SearchMode {
+	return SearchMode{
+		ModeValue:    SearchModeSemantic,
+		TooltipTrKey: "search.semantic_tooltip",
+		TitleTrKey:   "search.semantic",
+	}
+}
+
+// SearchModesWithSemantic prepends semantic mode to existing modes (makes it default)
+func SearchModesWithSemantic(modes []SearchMode) []SearchMode {
+	return append([]SearchMode{SemanticSearchMode()}, modes...)
 }

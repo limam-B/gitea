@@ -212,6 +212,7 @@ func LoadSettings() {
 	loadWebhookFrom(CfgProvider)
 	loadMigrationsFrom(CfgProvider)
 	loadIndexerFrom(CfgProvider)
+	loadUnityCocoFrom(CfgProvider)
 	loadTaskFrom(CfgProvider)
 	LoadQueueSettings()
 	loadProjectFrom(CfgProvider)

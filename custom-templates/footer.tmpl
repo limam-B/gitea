@@ -1,0 +1,58 @@
+{{if .IsViewFile}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const rightPanel = document.querySelector('.repo-view-right-panel');
+  const container = document.querySelector('.repo-view-container');
+  const buttonRowRight = document.querySelector('.repo-button-row-right');
+
+  if (!rightPanel || !container) return;
+
+  // Move panel into container
+  container.appendChild(rightPanel);
+
+  // Create "show" button and add to repo-button-row-right
+  if (buttonRowRight) {
+    const showBtn = document.createElement('button');
+    showBtn.type = 'button';
+    showBtn.className = 'repo-view-right-panel-toggle ui button tw-hidden not-mobile';
+    showBtn.setAttribute('data-toggle-action', 'show');
+    showBtn.setAttribute('data-tooltip-content', 'Show Code Intelligence');
+
+    // Use inline SVG (octicon-sidebar-collapse)
+    showBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+      <path d="M6.823 7.823a.25.25 0 0 1 0 .354l-2.396 2.396A.25.25 0 0 1 4 10.396V5.604a.25.25 0 0 1 .427-.177Z"></path>
+      <path d="M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0M1.5 1.75v12.5c0 .138.112.25.25.25H9.5v-13H1.75a.25.25 0 0 0-.25.25M11 14.5h3.25a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H11Z"></path>
+    </svg>`;
+
+    buttonRowRight.appendChild(showBtn);
+  }
+
+  // Toggle handler
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.repo-view-right-panel-toggle');
+    if (!btn) return;
+
+    const action = btn.getAttribute('data-toggle-action');
+    const shouldShow = action === 'show';
+
+    // Toggle panel visibility
+    rightPanel.classList.toggle('tw-hidden', !shouldShow);
+
+    // Toggle both buttons
+    document.querySelectorAll('.repo-view-right-panel-toggle').forEach(b => {
+      const isShowBtn = b.getAttribute('data-toggle-action') === 'show';
+      b.classList.toggle('tw-hidden', shouldShow === isShowBtn);
+    });
+
+    // Save preference
+    localStorage.setItem('codeIntelPanelVisible', shouldShow);
+  });
+
+  // Restore preference (default: visible)
+  const savedState = localStorage.getItem('codeIntelPanelVisible');
+  if (savedState === 'false') {
+    document.querySelector('.repo-view-right-panel-toggle[data-toggle-action="hide"]')?.click();
+  }
+});
+</script>
+{{end}}
