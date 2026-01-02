@@ -48,6 +48,21 @@ document.addEventListener('DOMContentLoaded', function() {
     localStorage.setItem('codeIntelPanelVisible', shouldShow);
   });
 
+  // Tab switching
+  document.querySelectorAll('.code-intel-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      const tabName = this.getAttribute('data-tab');
+
+      // Update active tab button
+      document.querySelectorAll('.code-intel-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+
+      // Show corresponding pane, hide others
+      document.querySelectorAll('.code-intel-pane').forEach(p => p.classList.add('tw-hidden'));
+      document.getElementById('tab-' + tabName)?.classList.remove('tw-hidden');
+    });
+  });
+
   // Restore preference (default: visible)
   const savedState = localStorage.getItem('codeIntelPanelVisible');
   if (savedState === 'false') {

@@ -13,6 +13,65 @@
   border-left: 1px solid var(--color-secondary);
 }
 
+/* Tabs */
+.code-intel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-secondary);
+}
+
+.code-intel-tab {
+  flex: 1;
+  padding: 8px 4px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-text-light);
+}
+
+.code-intel-tab:hover {
+  color: var(--color-text);
+}
+
+.code-intel-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.code-intel-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Reference items */
+.reference-item {
+  padding: 8px;
+  margin: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--color-secondary);
+}
+
+.reference-item:hover {
+  background: var(--color-hover);
+}
+
+.reference-file {
+  font-size: 11px;
+  color: var(--color-primary);
+  margin-bottom: 2px;
+}
+
+.reference-snippet {
+  font-size: 12px;
+  font-family: var(--fonts-monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-light);
+}
+
 @media (max-width: 767.98px) {
   .repo-view-right-panel,
   .repo-view-right-panel-toggle {

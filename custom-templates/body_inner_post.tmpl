@@ -8,8 +8,21 @@
     </button>
     <b>Code Intelligence</b>
   </div>
-  <div id="view-code-intel" class="tw-overflow-auto tw-h-full tw-p-4">
-    <p class="tw-text-gray-500">Select code to see references</p>
+
+  <!-- Tabs -->
+  <div class="code-intel-tabs">
+    <button type="button" class="code-intel-tab active" data-tab="references">References</button>
+    <button type="button" class="code-intel-tab" data-tab="dependencies">Dependencies</button>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="code-intel-content">
+    <div id="tab-references" class="code-intel-pane">
+      <p class="tw-text-gray-500 tw-text-center tw-p-4">Select code to find references</p>
+    </div>
+    <div id="tab-dependencies" class="code-intel-pane tw-hidden">
+      <p class="tw-text-gray-500 tw-text-center tw-p-4">Select a class to view dependencies</p>
+    </div>
   </div>
 </div>
 {{end}}
